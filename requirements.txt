@@ -6,3 +6,5 @@ yapf
 torch
 colorlog
 Mastodon.py
+cachetools
+types-cachetools
