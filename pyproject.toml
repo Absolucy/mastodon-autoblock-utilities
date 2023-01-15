@@ -1,0 +1,12 @@
+[tool.yapf]
+based_on_style = "pep8"
+column_limit = 120
+dedent_closing_brackets = true
+each_dict_entry_on_separate_line = true
+indent_blank_lines = false
+indent_closing_brackets = false
+split_before_dot = true
+use_tabs = true
+
+[tool.isort]
+no_sections = true
