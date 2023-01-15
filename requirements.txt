@@ -2,9 +2,7 @@ transformers
 datasets
 pillow
 requests
-yapf
 torch
 colorlog
 Mastodon.py
 cachetools
-types-cachetools
