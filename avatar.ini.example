@@ -1,0 +1,7 @@
+[config]
+instance = mastodon.social
+access-token = wefdhj3weryugh34weryufg34weryug34weyghv34weghb
+auto-block = true
+model = google/vit-base-patch16-224
+bad-categories = bad,super-bad
+minimum-score = 0.75
