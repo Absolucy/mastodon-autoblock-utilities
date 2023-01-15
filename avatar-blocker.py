@@ -101,7 +101,7 @@ def download_pfp(url, username):
 def is_account_bad(account):
 	global logger, classifier, bad_categories, minimum_score
 	if not "avatar_static" in account:
-		return
+		return False
 	pfp_url = account["avatar_static"]
 	user = account["acct"]
 	if pfp_url.endswith("/missing.png"):
@@ -110,7 +110,7 @@ def is_account_bad(account):
 	logger.debug("checking user %s", user)
 	pfp = download_pfp(pfp_url, user)
 	if not pfp:
-		return
+		return False
 	try:
 		classification = classifier(pfp)
 		logger.debug("classification of %s: %s", user, classification)
