@@ -146,7 +146,8 @@ def download_pfp(account):
 	response = requests.get(pfp_url, headers=headers, timeout=10)
 	if response.ok:
 		try:
-			return Image.open(BytesIO(response.content)).resize((224, 224))
+			return Image.open(BytesIO(response.content)).convert("RGB").resize(
+			    (224, 224))
 		except:
 			logger.exception("failed to get avatar for %s", name)
 			return None
