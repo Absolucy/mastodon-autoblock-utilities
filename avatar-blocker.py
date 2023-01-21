@@ -54,6 +54,18 @@ parser.add_argument(
     action="store_true"
 )
 parser.add_argument(
+    "--no-listen-public",
+    "-np",
+    help="disables the public stream listener",
+    action="store_true"
+)
+parser.add_argument(
+    "--no-listen-user",
+    "-nu",
+    help="disables the user stream listener",
+    action="store_true"
+)
+parser.add_argument(
     "--image-cache-ttl", "-it", type=int, help="how long (in minutes) to cache images for (default: 45 minutes)"
 )
 parser.add_argument(
@@ -85,6 +97,8 @@ minimum_score = args.minimum_score or float(config.get("minimum-score", 0.75))
 watch_hashtags = (args.watch_hashtags or config.get("watch-hashtags", "")).split(",")
 include_following = args.include_following or bool(config.get("include-following", False))
 exclude_followers = args.exclude_followers or bool(config.get("exclude-followers", False))
+no_listen_public = args.no_listen_public or bool(config.get("no-listen-public", False))
+no_listen_user = args.no_listen_user or bool(config.get("no-listen-user", False))
 image_cache_ttl = args.image_cache_ttl or int(config.get("image-cache-ttl", 45))
 relationship_cache_ttl = args.relationship_cache_ttl or int(config.get("relationship-cache-ttl", 360))
 user_agent = args.user_agent or config.get("user-agent", "mastodon-autoblock-utilities/avatar-blocker/1.0")
@@ -181,6 +195,11 @@ def on_stream(data):
 			id = account["id"]
 			name = account["acct"]
 			relationships = get_relationship(account) or {}
+			if isinstance(relationships, list):
+				if len(relationships) > 0:
+					relationships = relationships[0]
+				else:
+					relationships = {}
 			if not include_following and relationships.get("following", False):
 				logger.info("%s would be bad, but we're following them, so they get a pass", name)
 				return
@@ -201,6 +220,16 @@ def signal_handler(sig, frame):
 	logger.warning("Ctrl+C pressed, exiting")
 	exit(0)
 
+def check_hashtag_timeline(hashtag):
+	global mastodon, logger
+	logger.info("Checking timeline of #%s", hashtag)
+	try:
+		timeline = mastodon.timeline_hashtag(hashtag)
+	except:
+		logger.exception("failed to get timeline of #%s", hashtag)
+		return
+	for status in timeline:
+		 on_stream(status)
 
 try:
 	mastodon = Mastodon(access_token=access_token, api_base_url=f"https://{instance}")
@@ -208,8 +237,14 @@ try:
 except:
 	logger.exception("failed to log into mastodon")
 logger.info("logged into Mastodon as @%s", me.acct)
-mastodon.stream_user(CallbackStreamListener(update_handler=on_stream), run_async=True, reconnect_async=True)
-logger.info("listening to user stream")
+
+if not no_listen_user:
+	mastodon.stream_user(CallbackStreamListener(update_handler=on_stream), run_async=True, reconnect_async=True)
+	logger.info("listening to user stream")
+
+if not no_listen_public:
+	mastodon.stream_public(CallbackStreamListener(update_handler=on_stream), run_async=True, reconnect_async=True)
+	logger.info("listening to public stream")
 
 for hashtag in watch_hashtags:
 	hashtag = hashtag.removeprefix("#").strip()
@@ -217,9 +252,7 @@ for hashtag in watch_hashtags:
 	    hashtag, CallbackStreamListener(update_handler=on_stream), run_async=True, reconnect_async=True
 	)
 	logger.info("listening to #%s stream", hashtag)
-
-mastodon.stream_public(CallbackStreamListener(update_handler=on_stream), run_async=True, reconnect_async=True)
-logger.info("listening to public stream")
+	check_hashtag_timeline(hashtag)
 
 signal(SIGINT, signal_handler)
 signal(SIGTERM, signal_handler)
